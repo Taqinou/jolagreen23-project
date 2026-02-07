@@ -10,39 +10,39 @@ interface LiveDate {
 
 const LIVE_DATES: LiveDate[] = [
   {
-    id: "paris-olympia-2026",
-    dateISO: "2026-03-19T20:00:00+01:00",
+    id: "herouville-beauregard-2026",
+    dateISO: "2026-07-04",
+    city: "Hérouville-Saint-Clair",
+    country: "France",
+    venue: "Château de Beauregard",
+  },
+  {
+    id: "paris-yoyo-2026",
+    dateISO: "2026-01-18",
     city: "Paris",
     country: "France",
-    venue: "L'Olympia",
+    venue: "YOYO, Palais de Tokyo",
   },
   {
-    id: "bruxelles-ab-2026",
-    dateISO: "2026-04-03T20:30:00+02:00",
-    city: "Bruxelles",
-    country: "Belgique",
-    venue: "Ancienne Belgique",
+    id: "villeurbanne-transbordeur-2025",
+    dateISO: "2025-11-26",
+    city: "Villeurbanne",
+    country: "France",
+    venue: "Transbordeur",
   },
   {
-    id: "geneve-usine-2026",
-    dateISO: "2026-04-17T21:00:00+02:00",
-    city: "Geneve",
-    country: "Suisse",
-    venue: "L'Usine",
+    id: "marseille-espace-julien-2025",
+    dateISO: "2025-10-30",
+    city: "Marseille",
+    country: "France",
+    venue: "Espace Julien",
   },
   {
-    id: "montreal-mtelus-2026",
-    dateISO: "2026-06-06T20:00:00-04:00",
-    city: "Montreal",
-    country: "Canada",
-    venue: "MTELUS",
-  },
-  {
-    id: "new-york-terminal5-2026",
-    dateISO: "2026-09-12T20:00:00-04:00",
-    city: "New York",
-    country: "USA",
-    venue: "Terminal 5",
+    id: "lanester-lann-sevelin-2025",
+    dateISO: "2025-10-24",
+    city: "Lanester",
+    country: "France",
+    venue: "Parc des Expositions, Lann-Sevelin",
   },
 ];
 
@@ -96,6 +96,9 @@ export default function Live(): JSX.Element {
 
                 <p className="col-span-4 min-w-0 break-words font-display text-[1.35rem] uppercase tracking-[0.01em] text-foreground/72 md:col-span-4 md:pl-2 md:text-[1.9rem]">
                   {show.venue}
+                  <span className="mt-1 block font-mono text-[12px] tracking-[0.12em] text-foreground/62 md:text-[14px]">
+                    {show.country}
+                  </span>
                 </p>
               </article>
             </li>

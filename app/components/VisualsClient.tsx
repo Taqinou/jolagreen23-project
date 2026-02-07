@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 
 interface GalleryImage {
@@ -49,6 +49,20 @@ const FIT_FALLBACKS: Array<[number, number]> = [
   [4, 2],
   [2, 4],
 ];
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
+}
+
+function getParallaxFactor(tileId: number): number {
+  const factors = [-1.45, -1.05, -0.7, 0.7, 1.05, 1.45];
+  return factors[tileId % factors.length];
+}
+
+function getParallaxSpeed(tileId: number): number {
+  const speeds = [0.68, 0.82, 0.96, 1.08, 1.2, 1.34, 1.46];
+  return speeds[tileId % speeds.length];
+}
 
 function getGridConfig(width: number): GridConfig {
   if (width < 768) {
@@ -163,6 +177,8 @@ function generatePackedTiles(grid: GridConfig, images: GalleryImage[]): PackedTi
 
 export default function VisualsClient({ images }: VisualsClientProps) {
   const [viewport, setViewport] = useState<ViewportSize>({ width: 1280, height: 900 });
+  const [parallaxOffset, setParallaxOffset] = useState<number>(0);
+  const sectionRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     const updateViewport = (): void => {
@@ -192,8 +208,68 @@ export default function VisualsClient({ images }: VisualsClientProps) {
     return "34vw";
   }, [viewport.width]);
 
+  useEffect(() => {
+    const section = sectionRef.current;
+    if (!section) {
+      return;
+    }
+
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    let rafId: number | null = null;
+    let previousOffset = Number.NaN;
+
+    const updateParallax = (): void => {
+      rafId = null;
+
+      const target = sectionRef.current;
+      if (!target) {
+        return;
+      }
+
+      const rect = target.getBoundingClientRect();
+      const denominator = Math.max(window.innerHeight + rect.height, 1);
+      const normalized = (window.innerHeight - rect.top) / denominator;
+      const progress = clamp(normalized * 2 - 1, -1, 1);
+
+      const baseAmplitude = window.innerWidth < 768 ? 56 : 92;
+      const amplitude = prefersReducedMotion ? baseAmplitude * 0.7 : baseAmplitude;
+      const offset = progress * amplitude;
+
+      if (Math.abs(offset - previousOffset) < 0.08) {
+        return;
+      }
+
+      previousOffset = offset;
+      setParallaxOffset(offset);
+    };
+
+    const onFrameRequest = (): void => {
+      if (rafId !== null) {
+        return;
+      }
+      rafId = window.requestAnimationFrame(updateParallax);
+    };
+
+    onFrameRequest();
+    window.addEventListener("scroll", onFrameRequest, { passive: true });
+    window.addEventListener("resize", onFrameRequest);
+
+    return () => {
+      if (rafId !== null) {
+        window.cancelAnimationFrame(rafId);
+      }
+      window.removeEventListener("scroll", onFrameRequest);
+      window.removeEventListener("resize", onFrameRequest);
+    };
+  }, []);
+
   return (
-    <section id="visuals" className="relative h-[140vh] w-full overflow-hidden bg-black md:h-[165vh]">
+    <section
+      id="visuals"
+      ref={sectionRef}
+      className="relative h-[140vh] w-full overflow-hidden bg-black md:h-[165vh]"
+    >
       <div
         aria-hidden="true"
         className="pointer-events-none absolute left-0 top-0 z-10 h-6 w-full bg-gradient-to-b from-black/55 to-transparent"
@@ -215,7 +291,19 @@ export default function VisualsClient({ images }: VisualsClientProps) {
               gridRow: `${tile.rowStart} / span ${tile.rowSpan}`,
             }}
           >
-            <Image src={tile.src} alt={tile.alt} fill unoptimized sizes={imageSizes} className="object-cover" />
+            <div className="absolute -inset-[18%]">
+              <Image
+                src={tile.src}
+                alt={tile.alt}
+                fill
+                unoptimized
+                sizes={imageSizes}
+                className="object-cover [will-change:transform]"
+                style={{
+                  transform: `translate3d(0, ${(parallaxOffset * getParallaxFactor(tile.id) * getParallaxSpeed(tile.id)).toFixed(2)}px, 0)`,
+                }}
+              />
+            </div>
           </figure>
         ))}
       </div>

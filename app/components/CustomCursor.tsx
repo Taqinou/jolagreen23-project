@@ -1,139 +1,124 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-
-interface CursorState {
-  x: number;
-  y: number;
-  isHovering: boolean;
-  isPressed: boolean;
-  isVisible: boolean;
-}
+import { useEffect, useMemo, useRef, type CSSProperties } from "react";
 
 export default function CustomCursor() {
-  const [mounted, setMounted] = useState(false);
-  const [cursor, setCursor] = useState<CursorState>({
-    x: 0,
-    y: 0,
-    isHovering: false,
-    isPressed: false,
-    isVisible: false,
-  });
-
-  const handleMouseMove = useCallback((e: MouseEvent) => {
-    setCursor((prev) => ({
-      ...prev,
-      x: e.clientX,
-      y: e.clientY,
-      isVisible: true,
-    }));
-  }, []);
-
-  const handleMouseEnter = useCallback(() => {
-    setCursor((prev) => ({ ...prev, isVisible: true }));
-  }, []);
-
-  const handleMouseLeave = useCallback(() => {
-    setCursor((prev) => ({ ...prev, isVisible: false }));
-  }, []);
-
-  const handleMouseDown = useCallback(() => {
-    setCursor((prev) => ({ ...prev, isPressed: true }));
-  }, []);
-
-  const handleMouseUp = useCallback(() => {
-    setCursor((prev) => ({ ...prev, isPressed: false }));
-  }, []);
+  const cursorRef = useRef<HTMLDivElement | null>(null);
+  const rootActiveRef = useRef(false);
+  const hasMovedRef = useRef(false);
+  const isVisibleRef = useRef(false);
+  const isPressedRef = useRef(false);
+  const xRef = useRef(0);
+  const yRef = useRef(0);
 
   useEffect(() => {
-    // Check for touch device
-    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-    if (isTouchDevice) return;
+    if (!window.matchMedia("(pointer: fine)").matches) return;
 
-    setMounted(true);
+    const root = document.documentElement;
+    const renderCursor = (): void => {
+      const cursor = cursorRef.current;
+      if (!cursor) return;
 
-    // Track hover state on interactive elements
-    const interactiveSelectors = 'a, button, [role="button"], input, textarea, select, [data-cursor-hover]';
-    
-    const handleElementEnter = () => {
-      setCursor((prev) => ({ ...prev, isHovering: true }));
-    };
-    
-    const handleElementLeave = () => {
-      setCursor((prev) => ({ ...prev, isHovering: false }));
+      const scale = isPressedRef.current ? 0.95 : 1;
+      cursor.style.transform = `translate3d(${xRef.current + 10}px, ${yRef.current + 10}px, 0) scale(${scale})`;
+      cursor.style.opacity = hasMovedRef.current && isVisibleRef.current ? "1" : "0";
     };
 
-    // Add event listeners
-    document.addEventListener("mousemove", handleMouseMove);
-    document.addEventListener("mouseenter", handleMouseEnter);
-    document.addEventListener("mouseleave", handleMouseLeave);
-    document.addEventListener("mousedown", handleMouseDown);
-    document.addEventListener("mouseup", handleMouseUp);
-
-    // Add hover listeners to interactive elements
-    const addHoverListeners = () => {
-      const elements = document.querySelectorAll(interactiveSelectors);
-      elements.forEach((el) => {
-        el.addEventListener("mouseenter", handleElementEnter);
-        el.addEventListener("mouseleave", handleElementLeave);
-      });
+    const setRootActive = (active: boolean): void => {
+      if (rootActiveRef.current === active) return;
+      rootActiveRef.current = active;
+      if (active) {
+        root.classList.add("custom-cursor-active");
+        return;
+      }
+      root.classList.remove("custom-cursor-active");
     };
 
-    // Initial setup
-    addHoverListeners();
+    const handlePointerMove = (event: PointerEvent): void => {
+      const coalesced = event.getCoalescedEvents();
+      const latestEvent =
+        coalesced.length > 0 ? coalesced[coalesced.length - 1] : event;
 
-    // Observer for dynamically added elements
-    const observer = new MutationObserver(() => {
-      addHoverListeners();
+      xRef.current = latestEvent.clientX;
+      yRef.current = latestEvent.clientY;
+      isVisibleRef.current = true;
+      hasMovedRef.current = true;
+      setRootActive(true);
+      renderCursor();
+    };
+
+    const handlePointerDown = (): void => {
+      isPressedRef.current = true;
+      renderCursor();
+    };
+
+    const handlePointerUp = (): void => {
+      isPressedRef.current = false;
+      renderCursor();
+    };
+
+    const hideCursor = (): void => {
+      isVisibleRef.current = false;
+      isPressedRef.current = false;
+      setRootActive(false);
+      renderCursor();
+    };
+
+    window.addEventListener("pointerrawupdate", handlePointerMove, {
+      passive: true,
     });
-
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true,
-    });
+    window.addEventListener("pointermove", handlePointerMove, { passive: true });
+    window.addEventListener("pointerdown", handlePointerDown);
+    window.addEventListener("pointerup", handlePointerUp);
+    window.addEventListener("pointerleave", hideCursor);
+    window.addEventListener("blur", hideCursor);
 
     return () => {
-      document.removeEventListener("mousemove", handleMouseMove);
-      document.removeEventListener("mouseenter", handleMouseEnter);
-      document.removeEventListener("mouseleave", handleMouseLeave);
-      document.removeEventListener("mousedown", handleMouseDown);
-      document.removeEventListener("mouseup", handleMouseUp);
-      observer.disconnect();
-
-      const elements = document.querySelectorAll(interactiveSelectors);
-      elements.forEach((el) => {
-        el.removeEventListener("mouseenter", handleElementEnter);
-        el.removeEventListener("mouseleave", handleElementLeave);
-      });
+      root.classList.remove("custom-cursor-active");
+      rootActiveRef.current = false;
+      window.removeEventListener("pointerrawupdate", handlePointerMove);
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerdown", handlePointerDown);
+      window.removeEventListener("pointerup", handlePointerUp);
+      window.removeEventListener("pointerleave", hideCursor);
+      window.removeEventListener("blur", hideCursor);
     };
-  }, [handleMouseMove, handleMouseEnter, handleMouseLeave, handleMouseDown, handleMouseUp]);
+  }, []);
 
-  // Don't render until mounted (avoids hydration mismatch)
-  if (!mounted) return null;
+  const cursorStyle = useMemo<CSSProperties>(
+    () => ({
+      position: "fixed",
+      left: 0,
+      top: 0,
+      zIndex: 99999,
+      pointerEvents: "none",
+      opacity: 0,
+      transform: "translate3d(-9999px, -9999px, 0) scale(1)",
+      transition: "opacity 100ms ease",
+      willChange: "transform, opacity",
+    }),
+    []
+  );
+
+  const textStyle = useMemo<CSSProperties>(
+    () => ({
+      color: "var(--accent)",
+      fontFamily: "var(--font-space), var(--font-display), sans-serif",
+      fontSize: "28px",
+      fontWeight: 700,
+      lineHeight: 1,
+      letterSpacing: "-0.02em",
+      textShadow:
+        "0 0 6px rgba(var(--accent-rgb), 0.58), 0 0 14px rgba(var(--accent-rgb), 0.3)",
+      userSelect: "none",
+      display: "inline-block",
+    }),
+    []
+  );
 
   return (
-    <>
-      {/* Main dot */}
-      <div
-        className="cursor-dot"
-        style={{
-          left: cursor.x,
-          top: cursor.y,
-          opacity: cursor.isVisible ? 1 : 0,
-          transform: `translate(-50%, -50%) scale(${cursor.isPressed ? 0.8 : cursor.isHovering ? 1.5 : 1})`,
-        }}
-      />
-      
-      {/* Glow ring (appears on hover) */}
-      <div
-        className="cursor-glow"
-        style={{
-          left: cursor.x,
-          top: cursor.y,
-          opacity: cursor.isHovering && cursor.isVisible ? 1 : 0,
-          transform: `translate(-50%, -50%) scale(${cursor.isPressed ? 0.9 : 1})`,
-        }}
-      />
-    </>
+    <div ref={cursorRef} style={cursorStyle}>
+      <span style={textStyle}>23</span>
+    </div>
   );
 }
