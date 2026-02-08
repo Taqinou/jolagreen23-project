@@ -82,6 +82,16 @@ function getGridConfig(width: number): GridConfig {
   return { cols: 8, rows: 10 };
 }
 
+function getTileSizes(colSpan: number, totalCols: number): string {
+  const widthInViewport = clamp(
+    Math.round((colSpan / Math.max(1, totalCols)) * 100),
+    18,
+    100
+  );
+
+  return `${widthInViewport}vw`;
+}
+
 function createMatrix(rows: number, cols: number): boolean[][] {
   return Array.from({ length: rows }, () => Array.from({ length: cols }, () => false));
 }
@@ -186,7 +196,6 @@ export default function VisualsClient({ images }: VisualsClientProps) {
   const [parallaxOffset, setParallaxOffset] = useState<number>(0);
   const [mousePos, setMousePos] = useState<MousePosition>({ x: 0, y: 0, isInSection: false });
   const sectionRef = useRef<HTMLElement | null>(null);
-  // Track mouse position globally to have up-to-date coordinates on enter
   const lastMousePosRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
 
   useEffect(() => {
@@ -206,16 +215,6 @@ export default function VisualsClient({ images }: VisualsClientProps) {
 
   const grid = useMemo(() => getGridConfig(viewport.width), [viewport.width]);
   const tiles = useMemo(() => generatePackedTiles(grid, images), [grid, images]);
-
-  const imageSizes = useMemo(() => {
-    if (viewport.width < 768) {
-      return "70vw";
-    }
-    if (viewport.width < 1280) {
-      return "48vw";
-    }
-    return "34vw";
-  }, [viewport.width]);
 
   useEffect(() => {
     const section = sectionRef.current;
@@ -273,31 +272,28 @@ export default function VisualsClient({ images }: VisualsClientProps) {
     };
   }, []);
 
-  // Track mouse position globally to have current coordinates even when not in section
   useEffect(() => {
-    const handleGlobalMouseMove = (e: MouseEvent) => {
-      lastMousePosRef.current = { x: e.clientX, y: e.clientY };
+    const handleGlobalMouseMove = (event: MouseEvent): void => {
+      lastMousePosRef.current = { x: event.clientX, y: event.clientY };
     };
 
     window.addEventListener("mousemove", handleGlobalMouseMove);
     return () => window.removeEventListener("mousemove", handleGlobalMouseMove);
   }, []);
 
-  // Track mouse position in viewport coordinates (not affected by scroll)
-  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+  const handleMouseMove = useCallback((event: React.MouseEvent<HTMLElement>): void => {
     setMousePos({
-      x: e.clientX,
-      y: e.clientY,
+      x: event.clientX,
+      y: event.clientY,
       isInSection: true,
     });
   }, []);
 
-  const handleMouseLeave = useCallback(() => {
-    setMousePos((prev) => ({ ...prev, isInSection: false }));
+  const handleMouseLeave = useCallback((): void => {
+    setMousePos((previous) => ({ ...previous, isInSection: false }));
   }, []);
 
-  const handleMouseEnter = useCallback(() => {
-    // Use the most recent mouse position from global tracker
+  const handleMouseEnter = useCallback((): void => {
     const { x, y } = lastMousePosRef.current;
     setMousePos({ x, y, isInSection: true });
   }, []);
@@ -336,7 +332,7 @@ export default function VisualsClient({ images }: VisualsClientProps) {
               <AsciiRevealTile
                 src={tile.src}
                 alt={tile.alt}
-                sizes={imageSizes}
+                sizes={getTileSizes(tile.colSpan, grid.cols)}
                 parallaxTransform={`translate3d(0, ${(parallaxOffset * getParallaxFactor(tile.id) * getParallaxSpeed(tile.id)).toFixed(2)}px, 0)`}
                 globalMousePos={mousePos}
               />

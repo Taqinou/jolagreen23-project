@@ -92,7 +92,14 @@ function useStaticTextToAscii(text: string, config: AsciiConfig) {
       return asciiResult;
     };
 
-    setAsciiLines(buildAsciiLines());
+    const nextAsciiLines = buildAsciiLines();
+    const frameId = window.requestAnimationFrame(() => {
+      setAsciiLines(nextAsciiLines);
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+    };
   }, [text, config.width, config.chars]);
 
   return asciiLines;

@@ -1,11 +1,16 @@
 "use client";
 
+import Image from "next/image";
+import { useEffect, useRef, useState } from "react";
+
 interface Show {
   id: string;
   date: string;
   city: string;
   venue: string;
 }
+
+const LIVE_POSTER_SRC = "/images/hero.webp";
 
 const SHOWS: Show[] = [
   { id: "1", date: "04.07.26", city: "HÉROUVILLE", venue: "Château de Beauregard" },
@@ -16,19 +21,49 @@ const SHOWS: Show[] = [
 ];
 
 export default function Live(): JSX.Element {
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const [videoFailed, setVideoFailed] = useState(false);
+
+  useEffect(() => {
+    const videoElement = videoRef.current;
+    if (!videoElement) {
+      return;
+    }
+
+    void videoElement.play().catch(() => {
+      // Browser can block autoplay in rare conditions; keep poster/fallback visible.
+    });
+  }, []);
+
   return (
     <section id="live" className="relative min-h-screen w-full overflow-hidden bg-black">
       {/* Video Background */}
       <div className="absolute inset-0 z-0">
-        <video
-          autoPlay
-          muted
-          loop
-          playsInline
-          className="w-full h-full object-cover"
-        >
-          <source src="/videos/background-show.mp4" type="video/mp4" />
-        </video>
+        {!videoFailed ? (
+          <video
+            ref={videoRef}
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="metadata"
+            poster={LIVE_POSTER_SRC}
+            className="h-full w-full object-cover"
+            onError={() => setVideoFailed(true)}
+          >
+            <source src="/videos/background-show.mp4" type="video/mp4" />
+          </video>
+        ) : (
+          <Image
+            src={LIVE_POSTER_SRC}
+            alt=""
+            aria-hidden="true"
+            fill
+            quality={74}
+            sizes="100vw"
+            className="h-full w-full object-cover"
+          />
+        )}
 
         {/* Overlay */}
         <div className="absolute inset-0 bg-black/60" />

@@ -8,10 +8,12 @@ import {
   useRef,
   type PointerEvent as ReactPointerEvent,
 } from "react";
+import NextImage from "next/image";
 
 const ASCII_CHARS = "@#W$9876543210?!abc;:+=-,._ ";
 const GLITCH_CHARS = "@#$%&*!?/\\|[]{}()<>~^+=";
 const ASH_CHARS = ".,:;*";
+const HERO_FALLBACK_TEXT = "JOLAGREEN23";
 
 interface GlitchPosition {
   lineIdx: number;
@@ -47,7 +49,7 @@ function useImageToAscii(imageSrc: string, config: AsciiConfig) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const img = new Image();
+    const img = new window.Image();
     img.crossOrigin = "anonymous";
 
     img.onload = () => {
@@ -410,14 +412,31 @@ export default function Hero() {
       onPointerUp={handlePointerUp}
     >
       <div className="absolute inset-0 z-0">
-        <img
-          src="/images/hero.jpg"
-          alt="Background"
-          className="w-full h-full object-cover"
+        <NextImage
+          src="/images/hero.webp"
+          alt=""
+          aria-hidden="true"
+          fill
+          priority
+          quality={78}
+          sizes="100vw"
+          className="h-full w-full object-cover"
         />
       </div>
 
       <div className="relative z-20 flex flex-col items-center justify-center w-full h-full">
+        {isLoading && (
+          <h1
+            className="font-display text-accent text-[14vw] leading-[0.82] tracking-[-0.06em] uppercase select-none"
+            style={{
+              textShadow:
+                "0 0 12px rgba(0, 255, 102, 0.62), 0 0 28px rgba(0, 255, 102, 0.4)",
+            }}
+          >
+            {HERO_FALLBACK_TEXT}
+          </h1>
+        )}
+
         {!isLoading && (
           <pre
             ref={preRef}

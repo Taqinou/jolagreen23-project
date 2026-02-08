@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 
 const ASCII_CHARS = "█▓▒░@#W$9876543210?!abc;:+=-,._ ";
 
@@ -354,9 +355,13 @@ function DiagonalRelease({ release, index }: { release: Release; index: number }
         >
           {/* Image */}
           <div className="absolute inset-0 bg-black">
-             <img
+            <Image
               src={release.cover}
               alt={release.title}
+              fill
+              sizes="(max-width: 768px) 100vw, 60vw"
+              quality={76}
+              loading="lazy"
               className={`w-full h-full object-cover transition-opacity duration-500 ${
                 isHovered ? "opacity-20" : "opacity-100"
               }`}

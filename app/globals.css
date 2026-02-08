@@ -3,7 +3,7 @@
 /* Custom Font Faces */
 @font-face {
   font-family: 'Alte Haas Grotesk';
-  src: url('/fonts/alte_haas_grotesk/AlteHaasGroteskRegular.ttf') format('truetype');
+  src: url('/fonts/alte_haas_grotesk/AlteHaasGroteskRegular.woff2') format('woff2');
   font-weight: 400;
   font-style: normal;
   font-display: swap;
@@ -11,7 +11,7 @@
 
 @font-face {
   font-family: 'Alte Haas Grotesk';
-  src: url('/fonts/alte_haas_grotesk/AlteHaasGroteskBold.ttf') format('truetype');
+  src: url('/fonts/alte_haas_grotesk/AlteHaasGroteskBold.woff2') format('woff2');
   font-weight: 700;
   font-style: normal;
   font-display: swap;
@@ -19,7 +19,7 @@
 
 @font-face {
   font-family: 'Sanseriffic';
-  src: url('/fonts/sanseriffic/Sanseriffic.otf') format('opentype');
+  src: url('/fonts/sanseriffic/Sanseriffic.woff2') format('woff2');
   font-weight: 400 900;
   font-style: normal;
   font-display: swap;
@@ -27,7 +27,7 @@
 
 @font-face {
   font-family: 'Janiero';
-  src: url('/fonts/Janeiro-DEMO.otf') format('opentype');
+  src: url('/fonts/Janeiro-DEMO.woff2') format('woff2');
   font-weight: 400 700;
   font-style: normal;
   font-display: swap;
@@ -35,7 +35,7 @@
 
 @font-face {
   font-family: 'Coral Pixels';
-  src: url('/fonts/CoralPixels-Regular.ttf') format('truetype');
+  src: url('/fonts/CoralPixels-Regular.woff2') format('woff2');
   font-weight: 400;
   font-style: normal;
   font-display: swap;
