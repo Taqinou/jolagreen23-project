@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import Image from "next/image";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import AsciiRevealTile from "./AsciiRevealTile";
 
 interface GalleryImage {
   src: string;
@@ -28,6 +28,12 @@ interface PackedTile extends GalleryImage {
 
 interface VisualsClientProps {
   images: GalleryImage[];
+}
+
+interface MousePosition {
+  x: number;
+  y: number;
+  isInSection: boolean;
 }
 
 const SPAN_PATTERN: Array<[number, number]> = [
@@ -178,7 +184,10 @@ function generatePackedTiles(grid: GridConfig, images: GalleryImage[]): PackedTi
 export default function VisualsClient({ images }: VisualsClientProps) {
   const [viewport, setViewport] = useState<ViewportSize>({ width: 1280, height: 900 });
   const [parallaxOffset, setParallaxOffset] = useState<number>(0);
+  const [mousePos, setMousePos] = useState<MousePosition>({ x: 0, y: 0, isInSection: false });
   const sectionRef = useRef<HTMLElement | null>(null);
+  // Track mouse position globally to have up-to-date coordinates on enter
+  const lastMousePosRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
 
   useEffect(() => {
     const updateViewport = (): void => {
@@ -264,11 +273,43 @@ export default function VisualsClient({ images }: VisualsClientProps) {
     };
   }, []);
 
+  // Track mouse position globally to have current coordinates even when not in section
+  useEffect(() => {
+    const handleGlobalMouseMove = (e: MouseEvent) => {
+      lastMousePosRef.current = { x: e.clientX, y: e.clientY };
+    };
+
+    window.addEventListener("mousemove", handleGlobalMouseMove);
+    return () => window.removeEventListener("mousemove", handleGlobalMouseMove);
+  }, []);
+
+  // Track mouse position in viewport coordinates (not affected by scroll)
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    setMousePos({
+      x: e.clientX,
+      y: e.clientY,
+      isInSection: true,
+    });
+  }, []);
+
+  const handleMouseLeave = useCallback(() => {
+    setMousePos((prev) => ({ ...prev, isInSection: false }));
+  }, []);
+
+  const handleMouseEnter = useCallback(() => {
+    // Use the most recent mouse position from global tracker
+    const { x, y } = lastMousePosRef.current;
+    setMousePos({ x, y, isInSection: true });
+  }, []);
+
   return (
     <section
       id="visuals"
       ref={sectionRef}
       className="relative h-[140vh] w-full overflow-hidden bg-black md:h-[165vh]"
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      onMouseEnter={handleMouseEnter}
     >
       <div
         aria-hidden="true"
@@ -292,16 +333,12 @@ export default function VisualsClient({ images }: VisualsClientProps) {
             }}
           >
             <div className="absolute -inset-[18%]">
-              <Image
+              <AsciiRevealTile
                 src={tile.src}
                 alt={tile.alt}
-                fill
-                unoptimized
                 sizes={imageSizes}
-                className="object-cover [will-change:transform]"
-                style={{
-                  transform: `translate3d(0, ${(parallaxOffset * getParallaxFactor(tile.id) * getParallaxSpeed(tile.id)).toFixed(2)}px, 0)`,
-                }}
+                parallaxTransform={`translate3d(0, ${(parallaxOffset * getParallaxFactor(tile.id) * getParallaxSpeed(tile.id)).toFixed(2)}px, 0)`}
+                globalMousePos={mousePos}
               />
             </div>
           </figure>

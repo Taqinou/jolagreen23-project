@@ -30,7 +30,7 @@ function formatAsciiHoverTitle(title: string): string {
 function formatVerticalTitle(title: string): string {
   if (title.includes("&")) {
     const parts = title.split("&");
-    return parts.join("\n&\n");
+    return `${parts[0]}&\n${parts[1]}`;
   }
   if (title.includes(" ")) return title;
   if (title.includes("-")) return title.replace(/-/g, "-\n");
@@ -407,18 +407,18 @@ function DiagonalRelease({ release, index }: { release: Release; index: number }
             className={`flex items-center gap-4 h-full py-12 ${!isEven ? 'rotate-180' : ''}`}
           >
             {/* Vertical Title */}
-            <h2 
-              ref={titleRef}
-              className="font-display text-7xl md:text-8xl lg:text-[10rem] text-black leading-[0.75] uppercase"
-              style={{
-                writingMode: "vertical-rl",
-                textOrientation: "mixed",
-                whiteSpace: "pre-line",
-                textAlign: isMultilineTitle ? "center" : undefined,
-              }}
-            >
-              {formattedTitle}
-            </h2>
+              <h2 
+                ref={titleRef}
+                className="font-display text-7xl md:text-8xl lg:text-[10rem] text-black leading-[0.75] uppercase"
+                style={{
+                  writingMode: "vertical-rl",
+                  textOrientation: "mixed",
+                  whiteSpace: "pre-line",
+                  textAlign: "start",
+                }}
+              >
+                {formattedTitle}
+              </h2>
             
             {/* Metadata - Vertical */}
             <div className="flex flex-col justify-end gap-3 pb-2">
